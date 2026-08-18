@@ -563,12 +563,30 @@
     const ascentRate = REF_ASCENT_MPH * paceRatio; // m/h, 개인화
     const ascentTimeHr = ascentM > 0 ? ascentM / ascentRate : 0;
 
-    // 평균 내리막 경사도(%)로 Langmuir 스타일 보정 구간 결정
+    // 평균 내리막 경사도(%)에 따라 내리막 속도(m/h)를 선형 보간으로 계산
+    // (계단식 대신 완만↔급경사 경계에서 부드럽게 변하도록 수정)
     const avgGradePct = distanceKm > 0 ? (descentM / (distanceKm * 1000)) * 100 : 0;
+    const descentRateCurve = [
+      { grade: 0,  rate: 800 },  // 완만: Naismith 평지보다 빠름
+      { grade: 15, rate: 800 },  // 15%까지는 완만 구간 유지
+      { grade: 25, rate: 600 },  // 15~25%: 800 -> 600 으로 선형 감소
+      { grade: 35, rate: 400 }   // 25~35%: 600 -> 400 으로 선형 감소, 이후 급경사 고정
+    ];
     let descentRefRate;
-    if (avgGradePct <= 15) descentRefRate = 800;       // 완만 -> 평지보다 빠름
-    else if (avgGradePct <= 25) descentRefRate = 600;  // 보통
-    else descentRefRate = 400;                          // 급경사 -> 오르막만큼 느림
+    if (avgGradePct <= descentRateCurve[0].grade) {
+      descentRefRate = descentRateCurve[0].rate;
+    } else if (avgGradePct >= descentRateCurve[descentRateCurve.length - 1].grade) {
+      descentRefRate = descentRateCurve[descentRateCurve.length - 1].rate;
+    } else {
+      for (let i = 0; i < descentRateCurve.length - 1; i++) {
+        const a = descentRateCurve[i], b = descentRateCurve[i + 1];
+        if (avgGradePct >= a.grade && avgGradePct <= b.grade) {
+          const t = (avgGradePct - a.grade) / (b.grade - a.grade);
+          descentRefRate = a.rate + t * (b.rate - a.rate);
+          break;
+        }
+      }
+    }
     const descentRate = descentRefRate * paceRatio;
     const descentTimeHr = descentM > 0 ? descentM / descentRate : 0;
 
