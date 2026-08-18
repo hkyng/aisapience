@@ -39,7 +39,9 @@
   }
 
   body {
+    /* FerrariSans substitute per DESIGN_ferrari.md note: Inter 500, -1% tracking */
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    letter-spacing: -0.01em;
     background: var(--canvas);
     color: var(--ink);
     min-height: 100vh;
@@ -196,6 +198,7 @@
     cursor: pointer;
   }
 
+  .btn-primary:hover { background: linear-gradient(180deg, #a00c01, #da291c 64%); }
   .btn-primary:active { background: var(--primary-active); }
 
   .error-msg {
@@ -306,6 +309,11 @@
     border-radius: var(--r-none);
     padding: var(--sp-xs);
     margin-bottom: var(--sp-xxs);
+    transition: box-shadow 0.15s;
+  }
+
+  .record:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
 
   .record .top {
