@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>등산 하산시간 예측기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Ferrari design-system tokens (DESIGN_ferrari.md), FerrariSans -> Inter substitute */
+    --canvas: #181818;
+    --canvas-elevated: #303030;
+    --ink: #ffffff;
+    --body-c: #969696;
+    --muted: #666666;
+    --muted-soft: #8f8f8f;
+    --hairline: rgba(255,255,255,0.1);
+    --hairline-soft: rgba(255,255,255,0.06);
+    --primary: #da291c;
+    --primary-active: #b01e0a;
+    --focus-ring: #fff200;
+    --success: #03904a;
+    --warning: #f13a2c;
+
+    --r-none: 0px;
+    --r-sm: 4px;
+    --r-full: 9999px;
+
+    --sp-xxxs: 4px;
+    --sp-xxs: 8px;
+    --sp-xs: 16px;
+    --sp-sm: 24px;
+    --sp-md: 32px;
+    --sp-lg: 48px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--canvas);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: var(--sp-md) var(--sp-xs) 60px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: var(--sp-sm);
+  }
+
+  header h1 {
+    font-size: 1.65rem;
+    font-weight: 500;
+    letter-spacing: -0.4px;
+    margin-bottom: var(--sp-xxs);
+  }
+
+  header p {
+    color: var(--body-c);
+    font-size: 0.88rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: var(--sp-sm);
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: var(--sp-sm);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: var(--sp-xxs) 0 12px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--body-c);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.65px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab-btn.active {
+    color: var(--ink);
+    border-bottom-color: var(--primary);
+  }
+
+  .card {
+    background: var(--canvas-elevated);
+    border-radius: var(--r-none);
+    padding: var(--sp-sm) var(--sp-xs);
+    margin-bottom: var(--sp-xs);
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: var(--sp-xs);
+  }
+
+  .field {
+    margin-bottom: var(--sp-xs);
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--body-c);
+    margin-bottom: var(--sp-xxs);
+  }
+
+  .field input[type="number"],
+  .field input[type="time"] {
+    width: 100%;
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-sm);
+    padding: 14px 16px;
+    height: 48px;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .field input:focus {
+    border-color: var(--focus-ring);
+  }
+
+  .row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-xs);
+  }
+
+  .seg {
+    display: flex;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: var(--sp-xxs);
+  }
+
+  .seg button {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--body-c);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.65px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .seg button.active {
+    color: var(--ink);
+    border-bottom-color: var(--primary);
+  }
+
+  .hint {
+    font-size: 0.74rem;
+    color: var(--muted-soft);
+    margin-top: var(--sp-xxxs);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--primary);
+    color: var(--ink);
+    border: none;
+    border-radius: var(--r-none);
+    padding: 14px 32px;
+    height: 48px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .btn-primary:active { background: var(--primary-active); }
+
+  .error-msg {
+    color: var(--warning);
+    font-size: 0.82rem;
+    margin-bottom: var(--sp-xs);
+    display: none;
+  }
+
+  .result {
+    display: none;
+  }
+
+  .result .headline {
+    text-align: center;
+    padding: var(--sp-xs) 0 var(--sp-sm);
+  }
+
+  .result .headline .total {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--primary);
+  }
+
+  .result .headline .arrival {
+    margin-top: var(--sp-xxs);
+    font-size: 0.9rem;
+    color: var(--body-c);
+  }
+
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--sp-xs);
+  }
+
+  .breakdown .item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--body-c);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hairline-soft);
+  }
+
+  .breakdown .item b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    border-radius: var(--r-none);
+    padding: 13px 31px;
+    height: 48px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .note {
+    font-size: 0.74rem;
+    color: var(--muted-soft);
+    line-height: 1.6;
+    margin-top: var(--sp-xs);
+  }
+
+  /* history view */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-xs);
+    margin-bottom: var(--sp-xs);
+  }
+
+  .stat-box {
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-none);
+    padding: var(--sp-xs);
+    text-align: center;
+  }
+
+  .stat-box .val {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+
+  .stat-box .lbl {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--muted-soft);
+    margin-top: var(--sp-xxxs);
+  }
+
+  .record {
+    background: var(--canvas-elevated);
+    border-radius: var(--r-none);
+    padding: var(--sp-xs);
+    margin-bottom: var(--sp-xxs);
+  }
+
+  .record .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--sp-xxs);
+  }
+
+  .record .date {
+    font-size: 0.7rem;
+    color: var(--muted-soft);
+  }
+
+  .record .course {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .record .pred {
+    font-size: 0.8rem;
+    color: var(--body-c);
+    margin-bottom: var(--sp-xs);
+  }
+
+  .record .actual-form {
+    display: flex;
+    gap: var(--sp-xxs);
+    align-items: center;
+  }
+
+  .record .actual-form input {
+    width: 56px;
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-sm);
+    padding: 7px 8px;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .record .actual-form span {
+    font-size: 0.8rem;
+    color: var(--body-c);
+  }
+
+  .record .actual-form button {
+    margin-left: auto;
+    background: transparent;
+    color: var(--primary);
+    border: none;
+    border-radius: var(--r-none);
+    padding: 7px 4px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .record .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .record .error-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: var(--r-full);
+  }
+
+  .error-tag.good { background: rgba(3,144,74,0.15); color: var(--success); }
+  .error-tag.warn { background: rgba(241,58,44,0.15); color: var(--warning); }
+  .error-tag.bad  { background: rgba(218,41,28,0.18); color: var(--primary); }
+
+  .record .del {
+    background: none;
+    border: none;
+    color: var(--muted-soft);
+    font-size: 0.7rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .empty {
+    text-align: center;
+    color: var(--muted-soft);
+    font-size: 0.85rem;
+    padding: 30px 0;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>등산 하산시간 예측기</h1>
+    <p>코스 정보와 내 페이스를 입력하면 예상 하산 시간을 계산해요</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabPredictBtn" onclick="switchTab('predict')">예측하기</button>
+    <button class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">기록 &amp; 오차</button>
+  </div>
+
+  <!-- 예측 화면 -->
+  <div id="predictView">
+    <div class="card">
+      <h2>코스 정보</h2>
+      <div class="field">
+        <label for="distance">코스 거리 (km)</label>
+        <input type="number" id="distance" min="0" step="0.1" placeholder="예: 6.5">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="ascent">누적 오르막 (m)</label>
+          <input type="number" id="ascent" min="0" step="10" placeholder="예: 450">
+        </div>
+        <div class="field">
+          <label for="descent">누적 내리막 (m)</label>
+          <input type="number" id="descent" min="0" step="10" placeholder="예: 450">
+        </div>
+      </div>
+
+      <h2 style="margin-top:6px;">내 페이스</h2>
+      <div class="seg">
+        <button class="active" id="paceModeKmh" onclick="setPaceMode('kmh')">km/h</button>
+        <button id="paceModeMinkm" onclick="setPaceMode('minkm')">분/km</button>
+      </div>
+      <div class="field">
+        <input type="number" id="pace" min="0" step="0.1" placeholder="평지 기준, 예: 3.0">
+        <div class="hint" id="paceHint">평지를 걸을 때 시속 몇 km로 걷는지 (초보자는 보통 2.5~3.5km/h)</div>
+      </div>
+
+      <h2 style="margin-top:6px;">예상 휴식시간</h2>
+      <div class="seg">
+        <button class="active" id="restModeMin" onclick="setRestMode('min')">분</button>
+        <button id="restModePct" onclick="setRestMode('pct')">이동시간 대비 %</button>
+      </div>
+      <div class="field">
+        <input type="number" id="rest" min="0" step="5" placeholder="예: 30">
+        <div class="hint" id="restHint">사진 촬영, 간식, 휴식 등에 쓸 총 시간</div>
+      </div>
+
+      <div class="field">
+        <label for="startTime">출발 시각 (선택)</label>
+        <input type="time" id="startTime">
+        <div class="hint">입력하면 예상 도착 시각도 함께 알려줘요</div>
+      </div>
+
+      <div class="error-msg" id="formError"></div>
+      <button class="btn-primary" onclick="runPrediction()">예상 하산시간 계산</button>
+    </div>
+
+    <div class="card result" id="resultCard">
+      <div class="headline">
+        <div class="total" id="resTotal">-</div>
+        <div class="arrival" id="resArrival"></div>
+      </div>
+      <div class="breakdown" id="resBreakdown"></div>
+      <button class="btn-secondary" onclick="saveRecord()">이 예측 저장하기</button>
+    </div>
+
+    <p class="note">
+      계산 방식: Naismith's Rule(1892)을 기반으로 거리 이동 시간과 오르막 시간을 구하고,
+      오르막 보정치는 입력한 내 평지 페이스에 비례해 개인화했어요. 내리막은 Naismith 원 공식에
+      없는 부분이라, 평균 경사도에 따라 완만하면 더 빠르게·가파르면 더 느리게 걸린다고 보는
+      Langmuir 보정 방식을 단순화해서 반영했습니다. 실제와 차이가 날 수 있으니 하산 후 실제
+      시간을 꼭 기록해주세요 — 그 오차 데이터가 다음 버전의 핵심 재료가 됩니다.
+    </p>
+  </div>
+
+  <!-- 기록 화면 -->
+  <div id="historyView" style="display:none;">
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="val" id="statCount">0</div>
+        <div class="lbl">기록된 예측</div>
+      </div>
+      <div class="stat-box">
+        <div class="val" id="statAvgError">-</div>
+        <div class="lbl">평균 오차(분)</div>
+      </div>
+    </div>
+    <div id="recordList"></div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'hiking-eta-records-v1';
+  const REF_PACE_KMH = 4.8;      // Naismith 기준 평지 속도 (약 3mph)
+  const REF_ASCENT_MPH = 600;    // Naismith: 1시간당 600m 오르막
+  let paceMode = 'kmh';
+  let restMode = 'min';
+  let lastPrediction = null;
+
+  function setPaceMode(mode) {
+    paceMode = mode;
+    document.getElementById('paceModeKmh').classList.toggle('active', mode === 'kmh');
+    document.getElementById('paceModeMinkm').classList.toggle('active', mode === 'minkm');
+    document.getElementById('pace').placeholder = mode === 'kmh' ? '평지 기준, 예: 3.0' : '평지 기준, 예: 20';
+    document.getElementById('paceHint').textContent = mode === 'kmh'
+      ? '평지를 걸을 때 시속 몇 km로 걷는지 (초보자는 보통 2.5~3.5km/h)'
+      : '평지 1km를 걷는 데 걸리는 분 (초보자는 보통 17~24분/km)';
+  }
+
+  function setRestMode(mode) {
+    restMode = mode;
+    document.getElementById('restModeMin').classList.toggle('active', mode === 'min');
+    document.getElementById('restModePct').classList.toggle('active', mode === 'pct');
+    document.getElementById('rest').placeholder = mode === 'min' ? '예: 30' : '예: 20';
+    document.getElementById('restHint').textContent = mode === 'min'
+      ? '사진 촬영, 간식, 휴식 등에 쓸 총 시간(분)'
+      : '전체 이동시간 대비 휴식 비율(%)';
+  }
+
+  function switchTab(tab) {
+    const isPredict = tab === 'predict';
+    document.getElementById('predictView').style.display = isPredict ? 'block' : 'none';
+    document.getElementById('historyView').style.display = isPredict ? 'none' : 'block';
+    document.getElementById('tabPredictBtn').classList.toggle('active', isPredict);
+    document.getElementById('tabHistoryBtn').classList.toggle('active', !isPredict);
+    if (!isPredict) renderHistory();
+  }
+
+  function formatMinutes(totalMin) {
+    const m = Math.round(totalMin);
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    if (h <= 0) return `${mm}분`;
+    if (mm === 0) return `${h}시간`;
+    return `${h}시간 ${mm}분`;
+  }
+
+  function calc(distanceKm, ascentM, descentM, paceInput, paceMode, restInput, restMode) {
+    const userPaceKmh = paceMode === 'kmh' ? paceInput : (60 / paceInput);
+    const paceRatio = userPaceKmh / REF_PACE_KMH;
+
+    const distanceTimeHr = distanceKm / userPaceKmh;
+
+    const ascentRate = REF_ASCENT_MPH * paceRatio; // m/h, 개인화
+    const ascentTimeHr = ascentM > 0 ? ascentM / ascentRate : 0;
+
+    // 평균 내리막 경사도(%)로 Langmuir 스타일 보정 구간 결정
+    const avgGradePct = distanceKm > 0 ? (descentM / (distanceKm * 1000)) * 100 : 0;
+    let descentRefRate;
+    if (avgGradePct <= 15) descentRefRate = 800;       // 완만 -> 평지보다 빠름
+    else if (avgGradePct <= 25) descentRefRate = 600;  // 보통
+    else descentRefRate = 400;                          // 급경사 -> 오르막만큼 느림
+    const descentRate = descentRefRate * paceRatio;
+    const descentTimeHr = descentM > 0 ? descentM / descentRate : 0;
+
+    const movingTimeHr = distanceTimeHr + ascentTimeHr + descentTimeHr;
+    const restTimeHr = restMode === 'min' ? (restInput / 60) : movingTimeHr * (restInput / 100);
+    const totalTimeHr = movingTimeHr + restTimeHr;
+
+    return {
+      distanceTimeMin: distanceTimeHr * 60,
+      ascentTimeMin: ascentTimeHr * 60,
+      descentTimeMin: descentTimeHr * 60,
+      restTimeMin: restTimeHr * 60,
+      totalTimeMin: totalTimeHr * 60,
+      userPaceKmh
+    };
+  }
+
+  function runPrediction() {
+    const distance = parseFloat(document.getElementById('distance').value);
+    const ascent = parseFloat(document.getElementById('ascent').value) || 0;
+    const descent = parseFloat(document.getElementById('descent').value) || 0;
+    const paceInput = parseFloat(document.getElementById('pace').value);
+    const restInput = parseFloat(document.getElementById('rest').value) || 0;
+    const startTime = document.getElementById('startTime').value;
+
+    const errEl = document.getElementById('formError');
+    if (!distance || distance <= 0) {
+      errEl.textContent = '코스 거리를 입력해주세요.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!paceInput || paceInput <= 0) {
+      errEl.textContent = '평소 페이스를 입력해주세요.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    const result = calc(distance, ascent, descent, paceInput, paceMode, restInput, restMode);
+
+    document.getElementById('resTotal').textContent = formatMinutes(result.totalTimeMin);
+
+    let arrivalStr = '';
+    if (startTime) {
+      const [h, m] = startTime.split(':').map(Number);
+      const start = new Date();
+      start.setHours(h, m, 0, 0);
+      const arrival = new Date(start.getTime() + result.totalTimeMin * 60000);
+      const nextDay = arrival.getDate() !== start.getDate();
+      const hh = String(arrival.getHours()).padStart(2, '0');
+      const mm = String(arrival.getMinutes()).padStart(2, '0');
+      arrivalStr = `예상 도착 시각: ${nextDay ? '(다음날) ' : ''}${hh}:${mm}`;
+    }
+    document.getElementById('resArrival').textContent = arrivalStr;
+
+    document.getElementById('resBreakdown').innerHTML = `
+      <div class="item"><span>거리 이동</span><b>${formatMinutes(result.distanceTimeMin)}</b></div>
+      <div class="item"><span>오르막 보정</span><b>+${formatMinutes(result.ascentTimeMin)}</b></div>
+      <div class="item"><span>내리막 보정</span><b>+${formatMinutes(result.descentTimeMin)}</b></div>
+      <div class="item"><span>휴식</span><b>+${formatMinutes(result.restTimeMin)}</b></div>
+    `;
+
+    document.getElementById('resultCard').style.display = 'block';
+
+    lastPrediction = {
+      distance, ascent, descent, paceInput, paceMode, restInput, restMode, startTime,
+      totalTimeMin: result.totalTimeMin
+    };
+  }
+
+  function loadRecords() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveRecords(records) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  function saveRecord() {
+    if (!lastPrediction) return;
+    const records = loadRecords();
+    records.unshift({
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      ...lastPrediction,
+      actualTotalMin: null
+    });
+    saveRecords(records);
+    switchTab('history');
+  }
+
+  function renderHistory() {
+    const records = loadRecords();
+    const listEl = document.getElementById('recordList');
+
+    document.getElementById('statCount').textContent = records.length;
+    const withError = records.filter(r => r.actualTotalMin !== null);
+    if (withError.length > 0) {
+      const avgAbsErr = withError.reduce((s, r) => s + Math.abs(r.actualTotalMin - r.totalTimeMin), 0) / withError.length;
+      document.getElementById('statAvgError').textContent = Math.round(avgAbsErr);
+    } else {
+      document.getElementById('statAvgError').textContent = '-';
+    }
+
+    if (records.length === 0) {
+      listEl.innerHTML = '<div class="empty">아직 저장된 예측이 없어요.<br>예측하기 탭에서 계산 후 저장해보세요.</div>';
+      return;
+    }
+
+    listEl.innerHTML = records.map(r => {
+      const dateStr = new Date(r.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+      const courseStr = `${r.distance}km · 오르막 ${r.ascent || 0}m · 내리막 ${r.descent || 0}m`;
+      const predStr = `예상 소요시간 ${formatMinutes(r.totalTimeMin)}`;
+
+      let bottomHtml;
+      if (r.actualTotalMin === null) {
+        bottomHtml = `
+          <div class="actual-form">
+            <input type="number" min="0" id="ah-${r.id}" placeholder="시간">
+            <span>시간</span>
+            <input type="number" min="0" max="59" id="am-${r.id}" placeholder="분">
+            <span>분</span>
+            <button onclick="recordActual(${r.id})">기록</button>
+          </div>
+        `;
+      } else {
+        const diff = Math.round(r.actualTotalMin - r.totalTimeMin);
+        const absDiff = Math.abs(diff);
+        let tagClass = 'good', tagText = `오차 ${diff >= 0 ? '+' : ''}${diff}분`;
+        if (absDiff > 30) tagClass = 'bad';
+        else if (absDiff > 15) tagClass = 'warn';
+        bottomHtml = `
+          <div class="result-row">
+            <span style="font-size:0.8rem;color:var(--text-dim);">실제 ${formatMinutes(r.actualTotalMin)}</span>
+            <span class="error-tag ${tagClass}">${tagText}</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="record">
+          <div class="top">
+            <div class="course">${courseStr}</div>
+            <div class="date">${dateStr}</div>
+          </div>
+          <div class="pred">${predStr}</div>
+          ${bottomHtml}
+          <div style="text-align:right;margin-top:8px;">
+            <button class="del" onclick="deleteRecord(${r.id})">삭제</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function recordActual(id) {
+    const h = parseFloat(document.getElementById(`ah-${id}`).value) || 0;
+    const m = parseFloat(document.getElementById(`am-${id}`).value) || 0;
+    if (h === 0 && m === 0) return;
+    const records = loadRecords();
+    const idx = records.findIndex(r => r.id === id);
+    if (idx === -1) return;
+    records[idx].actualTotalMin = h * 60 + m;
+    saveRecords(records);
+    renderHistory();
+  }
+
+  function deleteRecord(id) {
+    const records = loadRecords().filter(r => r.id !== id);
+    saveRecords(records);
+    renderHistory();
+  }
+</script>
+</body>
+</html>
