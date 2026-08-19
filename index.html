@@ -555,7 +555,7 @@
 
   // KPI: 실제 하산시간 피드백 -> 구글시트로 조용히 전송(사이트 이탈 없음)
   // 아래 URL은 Google Apps Script 웹앱 배포 후 나오는 주소로 교체해야 실제로 시트에 쌓여요.
-  const FEEDBACK_WEBHOOK_URL = 'REPLACE_WITH_YOUR_APPS_SCRIPT_URL';
+  const FEEDBACK_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzBdXAVRr_f8upwBlTJpZc95IScGhkkH1soNHK8l2bq-JRuL_63qMN1Io15aNVlT3LZbg/exec';
   let lastCalcContext = null; // runPrediction()에서 채워짐 (거리/오르막/내리막/예측값 등)
 
   function submitActualTime() {
