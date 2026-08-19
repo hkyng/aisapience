@@ -481,6 +481,11 @@
       </div>
       <div class="breakdown" id="resBreakdown"></div>
       <button class="btn-secondary" onclick="saveRecord()">이 예측 저장하기</button>
+      <a class="btn-secondary" style="display:block;text-align:center;text-decoration:none;margin-top:8px;"
+         href="https://forms.gle/REPLACE_WITH_YOUR_GOOGLE_FORM" target="_blank" rel="noopener"
+         onclick="trackFeedbackClick()">
+        하산 후 실제 시간과 얼마나 맞았는지 알려주기 →
+      </a>
     </div>
 
     <p class="note">
@@ -503,6 +508,10 @@
         <div class="val" id="statAvgError">-</div>
         <div class="lbl">평균 오차(분)</div>
       </div>
+      <div class="stat-box">
+        <div class="val" id="statCompleted">0</div>
+        <div class="lbl">계산 완료 횟수</div>
+      </div>
     </div>
     <div id="recordList"></div>
   </div>
@@ -510,6 +519,23 @@
 
 <script>
   const STORAGE_KEY = 'hiking-eta-records-v1';
+  const CALC_COUNT_KEY = 'hiking-eta-calc-count-v1';
+  const FEEDBACK_CLICK_KEY = 'hiking-eta-feedback-clicks-v1';
+
+  // KPI: 계산 완료 횟수(퍼널 완료율의 로컬 대용 지표) — 결과 화면까지 도달할 때마다 +1
+  function trackCalcCompleted() {
+    const n = parseInt(localStorage.getItem(CALC_COUNT_KEY) || '0', 10) + 1;
+    localStorage.setItem(CALC_COUNT_KEY, String(n));
+    if (window.va) { try { window.va('event', { name: 'calc_completed' }); } catch (e) {} }
+    return n;
+  }
+
+  // KPI: 피드백 폼(실제 하산시간 응답) 유도 클릭 수 — 정성 피드백 루프의 진입 지표
+  function trackFeedbackClick() {
+    const n = parseInt(localStorage.getItem(FEEDBACK_CLICK_KEY) || '0', 10) + 1;
+    localStorage.setItem(FEEDBACK_CLICK_KEY, String(n));
+    if (window.va) { try { window.va('event', { name: 'feedback_form_click' }); } catch (e) {} }
+  }
   const REF_PACE_KMH = 4.8;      // Naismith 기준 평지 속도 (약 3mph)
   const REF_ASCENT_MPH = 600;    // Naismith: 1시간당 600m 오르막
   let paceMode = 'kmh';
@@ -626,6 +652,7 @@
     errEl.style.display = 'none';
 
     const result = calc(distance, ascent, descent, paceInput, paceMode, restInput, restMode);
+    trackCalcCompleted(); // KPI: 입력 완료 -> 결과 도달(완료율의 로컬 대용 지표)
 
     document.getElementById('resTotal').textContent = formatMinutes(result.totalTimeMin);
 
@@ -687,6 +714,7 @@
     const listEl = document.getElementById('recordList');
 
     document.getElementById('statCount').textContent = records.length;
+    document.getElementById('statCompleted').textContent = localStorage.getItem(CALC_COUNT_KEY) || '0';
     const withError = records.filter(r => r.actualTotalMin !== null);
     if (withError.length > 0) {
       const avgAbsErr = withError.reduce((s, r) => s + Math.abs(r.actualTotalMin - r.totalTimeMin), 0) / withError.length;
@@ -764,5 +792,8 @@
     renderHistory();
   }
 </script>
+<!-- Vercel Web Analytics: Vercel 프로젝트 설정에서 Analytics를 켜면 대시보드에서
+     실제 방문자 수 / 페이지뷰 / 위 trackCalcCompleted, trackFeedbackClick 커스텀 이벤트를 확인할 수 있어요 -->
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
