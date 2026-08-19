@@ -431,26 +431,26 @@
       <h2>코스 정보</h2>
       <div class="field">
         <label for="distance">코스 거리 (km)</label>
-        <input type="number" id="distance" min="0" step="0.1" placeholder="예: 6.5">
+        <input type="number" id="distance" min="0" step="0.1" placeholder="예: 6.5" onblur="trackFieldFilled('distance', this.value)">
       </div>
       <div class="row2">
         <div class="field">
           <label for="ascent">누적 오르막 (m)</label>
-          <input type="number" id="ascent" min="0" step="10" placeholder="예: 450">
+          <input type="number" id="ascent" min="0" step="10" placeholder="예: 450" onblur="trackFieldFilled('ascent', this.value)">
         </div>
         <div class="field">
           <label for="descent">누적 내리막 (m)</label>
-          <input type="number" id="descent" min="0" step="10" placeholder="예: 450">
+          <input type="number" id="descent" min="0" step="10" placeholder="예: 450" onblur="trackFieldFilled('descent', this.value)">
         </div>
       </div>
 
       <h2 style="margin-top:6px;">내 페이스</h2>
       <div class="seg">
-        <button class="active" id="paceModeKmh" onclick="setPaceMode('kmh')">km/h</button>
-        <button id="paceModeMinkm" onclick="setPaceMode('minkm')">분/km</button>
+        <button class="active" id="paceModeKmh" onclick="setPaceMode('kmh')">시속(km/h) — 얼마나 빠르게 걷나요</button>
+        <button id="paceModeMinkm" onclick="setPaceMode('minkm')">1km당 소요 시간(분)</button>
       </div>
       <div class="field">
-        <input type="number" id="pace" min="0" step="0.1" placeholder="평지 기준, 예: 3.0">
+        <input type="number" id="pace" min="0" step="0.1" placeholder="평지 기준, 예: 3.0" onblur="trackFieldFilled('pace', this.value)">
         <div class="hint" id="paceHint">평지를 걸을 때 시속 몇 km로 걷는지 (초보자는 보통 2.5~3.5km/h)</div>
       </div>
 
@@ -460,13 +460,13 @@
         <button id="restModePct" onclick="setRestMode('pct')">이동시간 대비 %</button>
       </div>
       <div class="field">
-        <input type="number" id="rest" min="0" step="5" placeholder="예: 30">
+        <input type="number" id="rest" min="0" step="5" placeholder="예: 30" onblur="trackFieldFilled('rest', this.value)">
         <div class="hint" id="restHint">사진 촬영, 간식, 휴식 등에 쓸 총 시간</div>
       </div>
 
       <div class="field">
         <label for="startTime">출발 시각 (선택)</label>
-        <input type="time" id="startTime">
+        <input type="time" id="startTime" onblur="trackFieldFilled('startTime', this.value)">
         <div class="hint">입력하면 예상 도착 시각도 함께 알려줘요</div>
       </div>
 
@@ -484,7 +484,7 @@
       <a class="btn-secondary" style="display:block;text-align:center;text-decoration:none;margin-top:8px;"
          href="https://forms.gle/REPLACE_WITH_YOUR_GOOGLE_FORM" target="_blank" rel="noopener"
          onclick="trackFeedbackClick()">
-        하산 후 실제 시간과 얼마나 맞았는지 알려주기 →
+        📝 하산하고 오시면 30초만 내주세요 — 실제 시간 알려주기
       </a>
     </div>
 
@@ -522,7 +522,12 @@
   const CALC_COUNT_KEY = 'hiking-eta-calc-count-v1';
   const FEEDBACK_CLICK_KEY = 'hiking-eta-feedback-clicks-v1';
 
-  // KPI: 계산 완료 횟수(퍼널 완료율의 로컬 대용 지표) — 결과 화면까지 도달할 때마다 +1
+  // KPI: 필드별 입력 완료 시점 기록 -> 어느 필드에서 이탈하는지(퍼널) Vercel Events에서 확인 가능
+  const FIELD_ORDER = ['distance', 'ascent', 'descent', 'pace', 'rest', 'startTime'];
+  function trackFieldFilled(field, value) {
+    if (!value) return; // 값 없이 그냥 지나간 건 기록하지 않음(빈 blur 노이즈 방지)
+    if (window.va) { try { window.va('event', { name: 'field_filled', field }); } catch (e) {} }
+  }
   function trackCalcCompleted() {
     const n = parseInt(localStorage.getItem(CALC_COUNT_KEY) || '0', 10) + 1;
     localStorage.setItem(CALC_COUNT_KEY, String(n));
