@@ -645,10 +645,13 @@
     // (계단식 대신 완만↔급경사 경계에서 부드럽게 변하도록 수정)
     const avgGradePct = distanceKm > 0 ? (descentM / (distanceKm * 1000)) * 100 : 0;
     const descentRateCurve = [
-      { grade: 0,  rate: 800 },  // 완만: Naismith 평지보다 빠름
-      { grade: 15, rate: 800 },  // 15%까지는 완만 구간 유지
-      { grade: 25, rate: 600 },  // 15~25%: 800 -> 600 으로 선형 감소
-      { grade: 35, rate: 400 }   // 25~35%: 600 -> 400 으로 선형 감소, 이후 급경사 고정
+      { grade: 0,  rate: 950 },  // 완만: Naismith 평지보다 빠름
+      { grade: 15, rate: 950 },  // 15%까지는 완만 구간 유지
+      { grade: 25, rate: 750 },  // 15~25%: 950 -> 750 으로 선형 감소
+      { grade: 35, rate: 550 }   // 25~35%: 750 -> 550 으로 선형 감소, 이후 급경사 고정
+      // 2026-08-20 실사용자 피드백 11건 분석: 내리막이 오르막보다 훨씬 많은 코스에서
+      // 예측이 실제보다 평균 64.7% 과대예측되는 패턴 확인 -> 내리막 속도 기준치를
+      // 전체적으로 ~150m/h씩 상향 조정. 표본이 적어(N=4) 잠정 조정이며 데이터 추가 확보 후 재검증 필요.
     ];
     let descentRefRate;
     if (avgGradePct <= descentRateCurve[0].grade) {
